@@ -28,7 +28,7 @@ public class FluidSimulator : MonoBehaviour
         }
     }
 
-    void FixedUpdate()
+    void FixedUpdate() //corresponds to substep
     {
         foreach (var p in particles)
         {
