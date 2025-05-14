@@ -19,5 +19,3 @@ Very basic implementation of realtime fluid simulation using the SPH algorithm.
 
 Contains basic ray marching & very un-optimized SPH. 
 
-![sph-demo](https://user-images.githubusercontent.com/25098044/233352440-c5178813-5c8e-4aff-b07a-3a9e3f14c682.gif)
-
