@@ -23,7 +23,7 @@ public class PBFSimulator : MonoBehaviour
     for (int i = 0; i < particleCount; i++)
     {
       Vector3 pos = new Vector3(
-          Random.Range(-1.5f, 1.5f),
+          Random.Range(-1.5f, 1.5f), //TODO: make this a param, or time base the spawning (like faucet)
           Random.Range(1.0f, 3.0f),
           Random.Range(-1.5f, 1.5f)
       );
@@ -78,7 +78,7 @@ public class PBFSimulator : MonoBehaviour
 
   void Start()
   {
-    cellSize = smoothingRadius; // Set cell size to match smoothing radius
+    cellSize = smoothingRadius; //match smoothing radius to cell size for 
     InitializeParticles();
   }
 
