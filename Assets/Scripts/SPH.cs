@@ -55,7 +55,7 @@ public class SPH : MonoBehaviour
 
     private void OnDrawGizmos() {
 
-        Gizmos.color = Color.blue;
+        Gizmos.color = Color.red;
         Gizmos.DrawWireCube(Vector3.zero, boxSize);
 
         if (!Application.isPlaying) {
@@ -180,7 +180,5 @@ public class SPH : MonoBehaviour
 
 
     }
-
-
-
+    
 }
