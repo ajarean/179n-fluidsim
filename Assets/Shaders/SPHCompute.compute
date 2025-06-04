@@ -17,7 +17,7 @@ struct Particle {
     float3 currentForce;
     float3 velocity;
     float3 position;
-    float3 visualise;
+    float3 colorVisual;
 };
 
 RWStructuredBuffer<Particle> _particles;
@@ -45,7 +45,7 @@ float timestep;
 float3 boxSize;
 float3 spherePos;
 float sphereRadius;
-bool neighborColor;
+int neighborColor;
 
 
 int3 GetCell(float3 position)
@@ -75,7 +75,7 @@ void HashParticles (uint3 id: SV_DISPATCHTHREADID) {
 
     uint particleIndex = particleIndices[id.x];
 
-    _particles[id.x].visualise = 0;
+    _particles[id.x].colorVisual = 0;
 
     // int3 cellIndex = floor((_particles[particleIndex].position) / radius);
     // uint flatCellIndex = GetFlatCellIndex(cellIndex);
@@ -231,7 +231,7 @@ void ComputeDensityPressure (uint3 id: SV_DISPATCHTHREADID) {
     
     float pres = 0.03 * (_particles[particleIndex].density - restDensity);
 
-    _particles[particleIndex].visualise = float3(pres/100, pres/100, pres/100);
+    _particles[particleIndex].colorVisual = float3(pres/100, pres/100, pres/100);
     
 }
 
@@ -263,7 +263,9 @@ void ComputeForces (uint3 id : SV_DISPATCHTHREADID) {
 
     int3 cellIndex = GetCell(_particles[particleIndex].position);
     
-    _particles[0].visualise = float3(1.0, 0.0, 0.0);
+    if(neighborColor){
+      _particles[0].colorVisual = float3(1.0, 0.0, 0.0);
+    }
     for(int i = -2; i <= 2; ++i)
     {
         for(int j = -2; j <= 2; ++j)
@@ -301,8 +303,8 @@ void ComputeForces (uint3 id : SV_DISPATCHTHREADID) {
                     //     continue;
                     // }
 
-                       if (particleIndex == 0) {
-                            _particles[particleIndexB].visualise = float3(0.0, 1.0, 0.0);
+                       if (particleIndex == 0 && neighborColor) {
+                            _particles[particleIndexB].colorVisual = float3(0.0, 1.0, 0.0);
                         }
 
 
