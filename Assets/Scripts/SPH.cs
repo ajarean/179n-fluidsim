@@ -29,6 +29,12 @@ public class SPH : MonoBehaviour
     public float particleRadius = 0.1f;
     public float spawnJitter = 0.2f;
 
+    [Header("Initial Settling")]
+    public float timeToDisableInteractionsSeconds = 0.1f; // e.g., 100 milliseconds. Adjust as needed.
+
+    private float elapsedTimeSinceStart = 0f;
+    private bool interparticleForcesEnabled = false;
+
     [Header("Particle Rendering")]
     public Mesh particleMesh;
     public float particleRenderSize = 8f;
@@ -45,6 +51,7 @@ public class SPH : MonoBehaviour
     public float gasConstant = 2f;
     public float restingDensity = 1f;
     public float timestep = 0.007f;
+    
 
     // Private Variables
     private ComputeBuffer _argsBuffer;
@@ -52,13 +59,28 @@ public class SPH : MonoBehaviour
     private int integrateKernel;
     private int computeForceKernel;
     private int densityPressureKernel;
+    
+    //Time Control
+    public bool isPausedFR { get; set; } = false;
+    private bool executeSingleStepRequest = false;
 
-    private void OnDrawGizmos() {
+    public void RequestSingleStep()
+    {
+        if (isPausedFR)
+        {
+            executeSingleStepRequest = true;
+            Debug.Log("Single step requested for SPH simulation.");
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
 
         Gizmos.color = Color.blue;
         Gizmos.DrawWireCube(Vector3.zero, boxSize);
 
-        if (!Application.isPlaying) {
+        if (!Application.isPlaying)
+        {
             Gizmos.color = Color.cyan;
             Gizmos.DrawWireSphere(spawnCenter, 0.1f);
         }
@@ -66,6 +88,8 @@ public class SPH : MonoBehaviour
     }
 
     private void Awake() {
+        elapsedTimeSinceStart = 0f;
+        interparticleForcesEnabled = (timeToDisableInteractionsSeconds <= 0f);
 
         SpawnParticlesInBox(); // Spawn Particles
 
@@ -117,17 +141,37 @@ public class SPH : MonoBehaviour
     }
 
 
-    private void FixedUpdate() {
+    private void FixedUpdate()
+    {
+        if (isPausedFR && !executeSingleStepRequest)
+        {
+            return;
+        }
 
+        if (!interparticleForcesEnabled)
+        { // Only increment and check if forces are not yet enabled
+            elapsedTimeSinceStart += Time.fixedDeltaTime; // Accumulate time passed in this fixed physics step
+            if (elapsedTimeSinceStart > timeToDisableInteractionsSeconds)
+            {
+                interparticleForcesEnabled = true;
+            }
+        }
+
+        shader.SetBool("interparticleForcesEnabled", interparticleForcesEnabled);
         shader.SetVector("boxSize", boxSize);
         shader.SetFloat("timestep", timestep);
         shader.SetVector("spherePos", collisionSphere.transform.position);
-        shader.SetFloat("sphereRadius", collisionSphere.transform.localScale.x/2);
+        shader.SetFloat("sphereRadius", collisionSphere.transform.localScale.x / 2);
 
         // Total Particles has to be divisible by 100 
         shader.Dispatch(densityPressureKernel, totalParticles / 100, 1, 1); // 1. Compute Density/Pressure for each particle
         shader.Dispatch(computeForceKernel, totalParticles / 100, 1, 1); // 2. Use Density/Pressure to calculate forces
         shader.Dispatch(integrateKernel, totalParticles / 100, 1, 1); // 3. Use forces to move particles
+
+        if (executeSingleStepRequest)
+        {
+            executeSingleStepRequest = false;
+        }
     }
 
 

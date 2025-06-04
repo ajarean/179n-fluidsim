@@ -30,6 +30,7 @@ float timestep;
 float3 boxSize;
 float3 spherePos;
 float sphereRadius;
+bool interparticleForcesEnabled;
 
 
 [numthreads(100,1,1)]
@@ -100,6 +101,9 @@ void ComputeDensityPressure (uint3 id: SV_DISPATCHTHREADID) {
 
         }
 
+        // if(radius2 > distanceSquared) {
+        //     sum += StdKernel(distanceSquared);
+        // }
     }
 
     _particles[id.x].density = sum * particleMass + 0.000001f;
@@ -128,9 +132,14 @@ void ComputeForces (uint3 id : SV_DISPATCHTHREADID) {
     float3 origin = _particles[id.x].position;
     float density2 = _particles[id.x].density * _particles[id.x].density;
     float mass2 = particleMass * particleMass;
+
     float3 pressure = float3(0,0,0); // To be calculated
     float3 visc = float3(0,0,0); // To be calculated 
-    
+    if(!interparticleForcesEnabled) {
+        _particles[id.x].currentForce = float3(0,-9.81*particleMass,0);
+        return;
+    }
+
     for (int i = 0; i < particleLength; i++) {
 
         if (origin.x == _particles[i].position.x && origin.y == _particles[i].position.y && origin.z == _particles[i].position.z) {
@@ -139,6 +148,7 @@ void ComputeForces (uint3 id : SV_DISPATCHTHREADID) {
 
         float dist = distance(_particles[i].position, origin);
         if (dist < radius * 2) {
+        // if(dist < radius && dist > 1e-6f) {
             float3 pressureGradientDirection = normalize(_particles[id.x].position - _particles[i].position);
             
             float3 _pressureContribution = mass2 * SpikyKernelGradient(dist, pressureGradientDirection);
