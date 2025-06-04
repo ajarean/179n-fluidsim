@@ -1,30 +1,31 @@
-#pragma kernel Integrate
-#pragma kernel ComputeDensityPrssure
-#pragma kernel ComputeForces
+#pragma kernel Integrate // Use the force of each particle to move particle
+#pragma kernel ComputeForces // Compute forces for each particle
+#pragma kernel ComputeDensityPressure // Compute density/pressure for each particle
 
-struct Particle
-{
-    float3 position;
-    float3 velocity;
-    float3 currentForce;
+struct Particle {
     float pressure;
     float density;
+    float3 currentForce;
+    float3 velocity;
+    float3 position;
 };
 
-// Particle buffer
-RWStructuredBuffer<Particle> particlesBuffer;
+RWStructuredBuffer<Particle> _particles;
+
+// Variable Declarations 
 
 float particleMass;
+float viscosity;
+float gasConstant;
+float restDensity;
+float boundDamping;
 float radius;
 float radius2;
 float radius3;
 float radius4;
 float radius5;
 float pi;
-float gasConstant;
-float viscosity;
-float restDensity;
-float boundDamping;
+int particleLength;
 float timestep;
 float3 boxSize;
 float3 spherePos;
@@ -33,11 +34,11 @@ float collisionForceMod = 30.0f;
 
 
 [numthreads(256,1,1)]
-void Integrate (uint3 id : SV_DispatchThreadID){
+void Integrate (uint3 id: SV_DISPATCHTHREADID) {
+
     Particle* p = &particlesBuffer[id.x];
    float3 vel = p.velocity + ((p.currentForce/particleMass)* timestep);
     p.position += vel * timestep;
-
 
     float3 topRight = boxSize/2;
     float3 bottomLeft = -boxSize/2;
