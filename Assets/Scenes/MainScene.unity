@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028305, g: 0.22571313, b: 0.3069213, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -132,6 +132,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 553318309}
+  - component: {fileID: 553318310}
   m_Layer: 0
   m_Name: SPH Simulator
   m_TagString: Untagged
@@ -154,6 +155,38 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &553318310
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 553318307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f2d526c3c3c9434cb2d05d609872b4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  collisionSphere: {fileID: 1168886303}
+  showSpheres: 1
+  numToSpawn: {x: 10, y: 10, z: 10}
+  boxSize: {x: 4, y: 10, z: 3}
+  spawnCenter: {x: 0, y: 0, z: 0}
+  particleRadius: 0.1
+  spawnJitter: 0.2
+  particleMesh: {fileID: 2540817853737639666, guid: d2bcb9b63a067d643b56910fd449b51b, type: 3}
+  particleRenderSize: 8
+  material: {fileID: 2100000, guid: ea5407f7bde59d6498a95296ae104fd0, type: 2}
+  labelFontSize: 16
+  labelColor: {r: 1, g: 1, b: 1, a: 1}
+  shader: {fileID: 7200000, guid: 6aaf70d2bd601a54697bc23509e4cb72, type: 3}
+  particles: []
+  boundDamping: -0.3
+  viscosity: -0.003
+  particleMass: 1
+  gasConstant: 2
+  restingDensity: 1
+  timestep: 0.007
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
