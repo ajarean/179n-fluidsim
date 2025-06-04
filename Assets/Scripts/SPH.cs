@@ -84,8 +84,9 @@ public class SPH : MonoBehaviour
     public uint[] particleIdx;
     public uint[] particleCellIdx;
     public uint[] cellOffsets;
-
+    [Header("Color")]
     public bool coloring = false;
+    public bool pressureColor = false;
 
     private void Awake()
     {
@@ -145,7 +146,6 @@ public class SPH : MonoBehaviour
 
     private void SetupComputeBuffers()
     {
-        int colorCheck = coloring ? 1 : 0;
         integrateKernel = shader.FindKernel("Integrate");
         computeForceKernel = shader.FindKernel("ComputeForces");
         densityPressureKernel = shader.FindKernel("ComputeDensityPressure");
@@ -169,7 +169,8 @@ public class SPH : MonoBehaviour
         shader.SetFloat("radius4", particleRadius * particleRadius * particleRadius * particleRadius);
         shader.SetFloat("radius5", particleRadius * particleRadius * particleRadius * particleRadius * particleRadius);
 
-        shader.SetInt("neighborColor", colorCheck);
+        shader.SetInt("neighborColor", coloring ? 1 : 0);
+        shader.SetInt("pressureColor", pressureColor ? 1 : 0);
 
         shader.SetBuffer(integrateKernel, "_particles", _particlesBuffer);
 
