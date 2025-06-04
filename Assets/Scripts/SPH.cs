@@ -48,6 +48,18 @@ public class SPH : MonoBehaviour
     public float restingDensity = 1f;
     public float timestep = 0.007f;
 
+    public bool IsActuallyPaused { get; set; } = false;
+    private bool executeSingleStepRequest = false;
+
+    public void RequestSingleStep()
+    {
+        if (IsActuallyPaused)
+        {
+            executeSingleStepRequest = true;
+            Debug.Log("Single step requested for SPH simulation.");
+        }
+    }
+
     // Private Variables
     private ComputeBuffer _argsBuffer;
     public ComputeBuffer _particlesBuffer;
@@ -201,7 +213,12 @@ public class SPH : MonoBehaviour
 
 
 
-    private void FixedUpdate() {
+    private void FixedUpdate()
+    {
+        if (IsActuallyPaused && !executeSingleStepRequest)
+        {
+            return;
+        }
 
         shader.SetVector("boxSize", boxSize);
         shader.SetFloat("timestep", timestep);
@@ -211,7 +228,7 @@ public class SPH : MonoBehaviour
         shader.SetFloat("restDensity", restingDensity);
 
         shader.SetVector("spherePos", collisionSphere.transform.position);
-        shader.SetFloat("sphereRadius", collisionSphere.transform.localScale.x/2);
+        shader.SetFloat("sphereRadius", collisionSphere.transform.localScale.x / 2);
         shader.Dispatch(clearCellOffsetsKernel, totalParticles / 256, 1, 1);
         // Total Particles has to be divisible by 2 for bitonic sort to work, 256 good for warps 
         shader.Dispatch(hashParticlesKernel, totalParticles / 256, 1, 1); // 0. Hash Particles to cells
@@ -225,6 +242,11 @@ public class SPH : MonoBehaviour
         shader.Dispatch(densityPressureKernel, totalParticles / 256, 1, 1); // 1. Compute Density/Pressure for each particle
         shader.Dispatch(computeForceKernel, totalParticles / 256, 1, 1); // 2. Use Density/Pressure to calculate forces
         shader.Dispatch(integrateKernel, totalParticles / 256, 1, 1); // 3. Use forces to move particles
+        
+         if (executeSingleStepRequest)
+        {
+            executeSingleStepRequest = false;
+        }
     }
 
 
