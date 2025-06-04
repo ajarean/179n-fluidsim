@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 [System.Serializable]
 [StructLayout(LayoutKind.Sequential, Size=44)]
 public struct Particle {
-    public float pressure; 
-    public float density; 
-    public Vector3 currentForce; 
-    public Vector3 velocity; 
-    public Vector3 position; 
+    public float pressure; // 4
+    public float density; // 8
+    public Vector3 currentForce; // 20
+    public Vector3 velocity; // 32
+    public Vector3 position; // 44 total bytes
 }
 
 public class SPH : MonoBehaviour
@@ -55,7 +55,7 @@ public class SPH : MonoBehaviour
 
     private void OnDrawGizmos() {
 
-        Gizmos.color = Color.red;
+        Gizmos.color = Color.blue;
         Gizmos.DrawWireCube(Vector3.zero, boxSize);
 
         if (!Application.isPlaying) {
@@ -180,5 +180,7 @@ public class SPH : MonoBehaviour
 
 
     }
-    
+
+
+
 }
