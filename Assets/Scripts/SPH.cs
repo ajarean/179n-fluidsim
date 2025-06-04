@@ -49,9 +49,19 @@ public class SPH : MonoBehaviour
     // Private Variables
     private ComputeBuffer _argsBuffer;
     public ComputeBuffer _particlesBuffer;
+
+    private ComputeBuffer _particleIndices;
+    private ComputeBuffer _particleCellIndices;
+    private ComputeBuffer _cellOffsets;
+
+
+
     private int integrateKernel;
     private int computeForceKernel;
     private int densityPressureKernel;
+    private int hashParticlesKernel;
+    private int sortKernel;
+    private int calculateCellOffsetsKernel;
 
     private void OnDrawGizmos() {
 
@@ -85,6 +95,18 @@ public class SPH : MonoBehaviour
         _particlesBuffer = new ComputeBuffer(totalParticles,44);
         _particlesBuffer.SetData(particles);
 
+        _particleIndices = new ComputeBuffer(totalParticles, 4);
+        _particleCellIndices = new ComputeBuffer(totalParticles, 4);
+        _cellOffsets = new ComputeBuffer(totalParticles, 4);
+
+        uint[] particleIndices = new uint[totalParticles];
+
+        for (int i = 0; i < particleIndices.Length; i++) particleIndices[i] = (uint)i;
+
+        _particleIndices.SetData(particleIndices);
+
+        //calcualte starting mass based on M/N
+
         SetupComputeBuffers();
 
     }
@@ -94,6 +116,9 @@ public class SPH : MonoBehaviour
         integrateKernel = shader.FindKernel("Integrate");
         computeForceKernel = shader.FindKernel("ComputeForces");
         densityPressureKernel = shader.FindKernel("ComputeDensityPressure");
+        hashParticlesKernel = shader.FindKernel("HashParticles");
+        sortKernel = shader.FindKernel("BitonicSort");
+        calculateCellOffsetsKernel = shader.FindKernel("CalculateCellOffsets");
 
         shader.SetInt("particleLength", totalParticles);
         shader.SetFloat("particleMass", particleMass);
@@ -113,7 +138,36 @@ public class SPH : MonoBehaviour
         shader.SetBuffer(integrateKernel, "_particles", _particlesBuffer);
         shader.SetBuffer(computeForceKernel, "_particles", _particlesBuffer);
         shader.SetBuffer(densityPressureKernel, "_particles", _particlesBuffer);
+        shader.SetBuffer(hashParticlesKernel, "_particles", _particlesBuffer);
 
+        shader.SetBuffer(computeForceKernel, "_particleIndices", _particleIndices);
+        shader.SetBuffer(densityPressureKernel, "_particleIndices", _particleIndices);
+        shader.SetBuffer(hashParticlesKernel, "_particleIndices", _particleIndices);
+        shader.SetBuffer(sortKernel, "_particleIndices", _particleIndices);
+        shader.SetBuffer(calculateCellOffsetsKernel, "_particleIndices", _particleIndices);
+
+        shader.SetBuffer(computeForceKernel, "_particleCellIndices", _particleCellIndices);
+        shader.SetBuffer(densityPressureKernel, "_particleCellIndices", _particleCellIndices);
+        shader.SetBuffer(hashParticlesKernel, "_particleCellIndices", _particleCellIndices);
+        shader.SetBuffer(sortKernel, "_particleCellIndices", _particleCellIndices);
+        shader.SetBuffer(calculateCellOffsetsKernel, "_particleCellIndices", _particleCellIndices);
+
+        shader.SetBuffer(computeForceKernel, "_cellOffsets", _cellOffsets);
+        shader.SetBuffer(hashParticlesKernel, "_cellOffsets", _cellOffsets);
+        shader.SetBuffer(densityPressureKernel, "_cellOffsets", _cellOffsets);
+        shader.SetBuffer(calculateCellOffsetsKernel, "_cellOffsets", _cellOffsets);
+
+    }
+
+    private void SortParticles() {
+
+        for (var dim = 2; dim <= totalParticles; dim <<= 1) {
+            shader.SetInt("dim", dim);
+            for (var block = dim >> 1; block > 0; block >>= 1) {
+                shader.SetInt("block", block);
+                shader.Dispatch(sortKernel, totalParticles/256, 1, 1);
+            }
+        }
     }
 
 
@@ -124,10 +178,17 @@ public class SPH : MonoBehaviour
         shader.SetVector("spherePos", collisionSphere.transform.position);
         shader.SetFloat("sphereRadius", collisionSphere.transform.localScale.x/2);
 
-        // Total Particles has to be divisible by 100 
-        shader.Dispatch(densityPressureKernel, totalParticles / 100, 1, 1); // 1. Compute Density/Pressure for each particle
-        shader.Dispatch(computeForceKernel, totalParticles / 100, 1, 1); // 2. Use Density/Pressure to calculate forces
-        shader.Dispatch(integrateKernel, totalParticles / 100, 1, 1); // 3. Use forces to move particles
+        // Total Particles has to be divisible by 256 
+        shader.Dispatch(hashParticlesKernel, totalParticles / 256, 1, 1); // 0. Hash Particles to cells
+
+        SortParticles(); // Sort Particles by cell index
+
+        shader.Dispatch(calculateCellOffsetsKernel, totalParticles / 256, 1, 1); // 0. Calculate cell offsets
+
+
+        shader.Dispatch(densityPressureKernel, totalParticles / 256, 1, 1); // 1. Compute Density/Pressure for each particle
+        shader.Dispatch(computeForceKernel, totalParticles / 256, 1, 1); // 2. Use Density/Pressure to calculate forces
+        shader.Dispatch(integrateKernel, totalParticles / 256, 1, 1); // 3. Use forces to move particles
     }
 
 
